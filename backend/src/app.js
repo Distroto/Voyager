@@ -24,8 +24,4 @@ app.get('/', (req, res) => {
 app.use('/api/voyage', voyageRoutes);
 app.use('/api/maintainance', maintenanceRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
 module.exports = app;
