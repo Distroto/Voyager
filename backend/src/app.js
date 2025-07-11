@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const voyageRoutes = require('./routes/voyageRouter');
+const maintenanceRoutes = require('./routes/maintenanceRouter');
 
 dotenv.config();
 connectDB();
@@ -19,6 +21,8 @@ app.get('/', (req, res) => {
   res.json({ message: 'Voyager API is running!' });
 });
 
+app.use('/api/voyage', voyageRoutes);
+app.use('/api/maintainance', maintenanceRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
