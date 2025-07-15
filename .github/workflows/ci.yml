@@ -136,4 +136,4 @@ jobs:
             docker compose -f docker-compose.yaml pull
             
             echo "Restarting services with new images..."
-            docker compose -f docker--compose.yaml up -d --force-recreate
+            docker compose -f docker-compose.yaml up -d --force-recreate
