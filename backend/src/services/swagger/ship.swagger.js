@@ -60,7 +60,7 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/NewShipInput'
+ *             $ref: '#/components/schemas/Ship'
  *     responses:
  *       '201':
  *         description: Ship successfully registered. Returns the newly created ship object.
