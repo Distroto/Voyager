@@ -1,23 +1,21 @@
 const Ship = require('../models/shipModel');
 const Voyage = require('../models/voyageModel');
 const { mlQueue, mlQueueEvents } = require('../queues/queue');
+const { Job } = require('bullmq'); 
 
-// GET /maintenance-alerts
 exports.getMaintenanceAlerts = async (req, res) => {
   const ship = await Ship.findOne();
   if (!ship) {
     return res.status(404).json({ error: "No ships found in the database to analyze." });
   }
 
+  let job;
   try {
-    // 1. Gather features for the maintenance model
-    // We'll simulate running hours and get the number of voyages from the DB
-    const voyagesSinceLastService = await Voyage.countDocuments({ ship: ship._id }); // Simplified for demo
-    const simulatedRunningHours = voyagesSinceLastService * 150; // 150 hours per voyage
-    const simulatedLoadPercent = 0.85; // Assume heavy use
+    const voyagesSinceLastService = await Voyage.countDocuments({ ship: ship._id });
+    const simulatedRunningHours = voyagesSinceLastService * 150;
+    const simulatedLoadPercent = 0.85;
 
-    // 2. Add a job to the queue
-    const job = await mlQueue.add('predict-maintenance', {
+    job = await mlQueue.add('predict-maintenance', {
       type: 'predict-maintenance',
       payload: {
         total_running_hours: simulatedRunningHours,
@@ -26,17 +24,23 @@ exports.getMaintenanceAlerts = async (req, res) => {
       }
     });
 
-    // 3. Wait for the job to complete
     console.log(`[API] Waiting for maintenance prediction job ${job.id} to complete...`);
-    const result = await job.waitUntilFinished(mlQueueEvents);
-    
-    // 4. Return the AI-generated alert
-    console.log(`[API] Maintenance job ${job.id} completed.`);
-    res.status(200).json({
-      shipId: ship._id,
-      shipName: ship.name,
-      ...result // The result will contain { maintenanceRequired, riskProbability }
-    });
+    await job.waitUntilFinished(mlQueueEvents); 
+    const finalState = await job.getState();
+    if (finalState === 'completed') {
+      const completedJob = await Job.fromId(mlQueue, job.id);
+      const result = completedJob.returnvalue;
+
+      console.log(`[API] Maintenance job ${job.id} completed.`);
+      res.status(200).json({
+        shipId: ship._id,
+        shipName: ship.name,
+        ...result
+      });
+    } else {
+      const failedJob = await Job.fromId(mlQueue, job.id);
+      throw new Error(`Maintenance job failed: ${failedJob.failedReason}`);
+    }
 
   } catch (err) {
     console.error('[API] Error during maintenance prediction:', err.message);
