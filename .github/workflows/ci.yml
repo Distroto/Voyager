@@ -133,7 +133,7 @@ jobs:
             
             # Use the production compose file to pull and restart services
             echo "Pulling latest Docker images..."
-            docker compose -f docker-compose.prod.yaml pull
+            docker compose -f docker-compose.yaml pull
             
             echo "Restarting services with new images..."
-            docker compose -f docker--compose.prod.yaml up -d --force-recreate
+            docker compose -f docker--compose.yaml up -d --force-recreate
