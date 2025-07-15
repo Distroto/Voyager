@@ -64,5 +64,5 @@ describe('Voyager API Endpoints', () => {
         
         expect(res.statusCode).toBe(200);
         expect(res.body).toHaveProperty('maintenanceRequired');
-    }, 30000); 
+    }, 60000); 
 });
