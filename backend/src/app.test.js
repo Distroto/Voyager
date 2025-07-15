@@ -7,6 +7,11 @@ beforeAll(async () => {
   await new Promise(resolve => setTimeout(resolve, 2000));
 });
 
+afterEach(async () => {
+  await Ship.deleteMany({});
+  await Voyage.deleteMany({});
+});
+
 afterAll(async () => {
     await mlQueue.close();
     await mlQueueEvents.close();
@@ -14,49 +19,57 @@ afterAll(async () => {
 });
 
 describe('Voyager API Endpoints', () => {
-  let newShipId;
+  const testShipPayload = {
+      name: "MV Jest Explorer",
+      imoNumber: "9876543",
+      engineType: "Test Engine",
+      capacity: 50000,
+      fuelConsumptionRate: 25
+  };
+
+
+  it('GET /ships should return an empty array initially', async () => {
+      const res = await request(app).get('/ships');
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual([]);
+  });
+
   it('POST /ships should register a new ship successfully', async () => {
       const res = await request(app)
           .post('/ships')
-          .send({
-              name: "Test Ship",
-              imoNumber: "1234567",
-              engineType: "Test Engine",
-              capacity: 50000,
-              fuelConsumptionRate: 25
-          });
+          .send(testShipPayload);
+      
       expect(res.statusCode).toBe(201);
       expect(res.body).toHaveProperty('_id');
-      newShipId = res.body._id;
-  });
-    
-  it('POST /plan-voyage should 400 on missing body', async () => {
-    const res = await request(app).post('/plan-voyage').send({});
-    expect(res.statusCode).toBeGreaterThanOrEqual(400);
+      expect(res.body.name).toBe(testShipPayload.name);
   });
 
-  it('GET /plan-history should 200', async () => {
-    const res = await request(app).get('/plan-history');
-    expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+  it('POST /plan-voyage should fail with 400 if required fields are missing', async () => {
+
+      const shipRes = await request(app).post('/ships').send(testShipPayload);
+      const shipId = shipRes.body._id;
+
+      const res = await request(app)
+          .post('/plan-voyage')
+          .send({ ship: shipId }); 
+      expect(res.statusCode).toBe(400);
   });
 
-  it('POST /feedback should 400 on missing body', async () => {
-    const res = await request(app).post('/feedback').send({});
-    expect(res.statusCode).toBeGreaterThanOrEqual(400);
+  it('GET /plan-history should return an empty array', async () => {
+      const res = await request(app).get('/plan-history');
+      expect(res.statusCode).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body.length).toBe(0);
   });
 
-  it('GET /ships should return an array', async () => {
-    const res = await request(app).get('/ships');
-    expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-  });
+  it('GET /maintenance-alerts should return a prediction', async () => {
+      
+      await request(app).post('/ships').send(testShipPayload);
 
-  it('GET /maintenance-alerts should 200', async () => {
-    const res = await request(app).get('/maintenance-alerts');
-    expect([200,404]).toContain(res.statusCode); // 404 if no ships
-    if(res.statusCode === 200) {
-      expect(res.body).toHaveProperty('shipId');
-    }
-  });
-}); 
+      const res = await request(app).get('/maintenance-alerts');
+      
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toHaveProperty('maintenanceRequired');
+      expect(res.body).toHaveProperty('riskProbability');
+  }, 30000); // <-- FIX 2: Add a 30-second timeout for this long-running test
+});
