@@ -14,11 +14,15 @@ jobs:
         image: mongo:6
         ports:
           - 27017:27017
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
     defaults:
       run:
         working-directory: ./backend
     env:
-      MONGO_URI: mongodb://localhost:27017/voyager-test
+      MONGO_URI: ${{ secrets.MONGO_URI }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
