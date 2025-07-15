@@ -1,27 +1,70 @@
-version: '3.8'
+name: voyager-v2 # Keeps the project isolated from old corrupt state
+
 services:
   mongo:
     image: mongo:6
-    container_name: voyager-mongo
+    container_name: voyager-mongo-v2
     restart: always
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
 
+  redis:
+    image: redis:alpine
+    container_name: voyager-redis-v2
+    restart: always
+    ports:
+      - "6379:6379"
+
   backend:
     build: ./backend
-    container_name: voyager-backend
+    container_name: voyager-backend-v2
     restart: always
     ports:
       - "3000:3000"
     env_file:
       - ./backend/.env
+    # NEEDS BOTH: Connects to MongoDB (public) and Redis (internal)
+    dns:
+      - 127.0.0.11
+      - 8.8.8.8
     depends_on:
       - mongo
+      - redis
     volumes:
       - ./backend:/app
       - /app/node_modules
+
+  ml-worker:
+    build:
+      context: ./backend
+      dockerfile: worker.Dockerfile
+    container_name: voyager-ml-worker-v2
+    restart: always
+    env_file:
+      - ./backend/.env
+    # NEEDS BOTH: Connects to MongoDB (public), Redis (internal), and ml (internal)
+    dns:
+      - 127.0.0.11
+      - 8.8.8.8
+    depends_on:
+      - ml
+
+  ml:
+    build:
+      context: ./ml
+    container_name: voyager-ml-api-v2
+    restart: always
+    ports:
+      - "5050:5000"
+    env_file:
+      - ./ml/.env
+    # NEEDS PUBLIC: Connects to OpenAI (public)
+    dns:
+      - 8.8.8.8
+    volumes:
+      - ./ml:/app
 
 volumes:
   mongo_data:

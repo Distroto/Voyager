@@ -4,6 +4,8 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const voyageRoutes = require('./routes/voyageRouter');
 const maintenanceRoutes = require('./routes/maintenanceRouter');
+const shipRoutes = require('./routes/shipRouter');
+const setupSwaggerDocs = require('./services/swagger/swagger');
 
 dotenv.config();
 connectDB();
@@ -12,16 +14,22 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Basic route
-app.get('/', (req, res) => {
-  res.json({ message: 'Voyager API is running!' });
-});
+app.use('/', voyageRoutes);
+app.use('/', maintenanceRoutes);
+app.use('/', shipRoutes);
 
-app.use('/api/voyage', voyageRoutes);
-app.use('/api/maintainance', maintenanceRoutes);
+setupSwaggerDocs(app);
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
 
 module.exports = app;

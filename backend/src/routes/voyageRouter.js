@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const voyageController = require('../controllers/voyageController');
+const { planVoyage, getPlanHistory, submitFeedback } = require('../controllers/voyageController');
 
-router.post('/plan-voyage', voyageController.planVoyage);
-router.get('/plan-history', voyageController.getPlanHistory);
-router.post('/feedback', voyageController.submitFeedback);
+router.post('/plan-voyage', planVoyage);
+router.get('/plan-history', getPlanHistory);
+router.post('/feedback', submitFeedback);
 
-module.exports = router; 
+module.exports = router;
