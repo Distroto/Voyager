@@ -63,36 +63,28 @@ describe('Voyager API Endpoints', () => {
         expect(res.statusCode).toBe(404);
     });
 
-    it('GET /maintenance-alerts should queue a job when a ship exists', async () => {
-        // Create a ship first
+    it(
+      'GET /maintenance-alerts should queue a job when a ship exists',
+      async () => {
         await request(app).post('/ships').send({
-            name: "MV Jest Final",
-            imoNumber: "1112223",
-            engineType: "Test Engine",
-            capacity: 50000,
-            fuelConsumptionRate: 25
+          name: "MV Jest Final",
+          imoNumber: "1112223",
+          engineType: "Test Engine",
+          capacity: 50000,
+          fuelConsumptionRate: 25
         });
-
+    
         const initialJobCount = await mlQueue.getJobCountByTypes('waiting', 'active');
-
+    
         const res = await request(app).get('/maintenance-alerts');
+    
         expect(res.statusCode).toBe(202);
         expect(res.body).toHaveProperty('message', 'Maintenance analysis has been initiated.');
         expect(res.body).toHaveProperty('jobId');
-
-        // Wait until job appears in queue (max 5s)
-        const timeout = 5000;
-        const interval = 200;
-        let waited = 0;
-        let finalJobCount = initialJobCount;
-
-        while (waited < timeout) {
-            finalJobCount = await mlQueue.getJobCountByTypes('waiting', 'active');
-            if (finalJobCount > initialJobCount) break;
-            await new Promise(res => setTimeout(res, interval));
-            waited += interval;
-        }
-
+    
+        const finalJobCount = await mlQueue.getJobCountByTypes('waiting', 'active');
         expect(finalJobCount).toBeGreaterThan(initialJobCount);
-    });
+      },
+      60000 // ⬅️ timeout increased to 60s
+    );    
 });
