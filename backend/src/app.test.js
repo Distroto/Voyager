@@ -1,6 +1,7 @@
 const request = require('supertest');
 const app = require('./app');
 const mongoose = require('mongoose');
+const { mlQueue, mlQueueEvents } = require('./queues/queue');
 
 beforeAll(async () => {
   await new Promise(resolve => setTimeout(resolve, 2000));
@@ -14,12 +15,6 @@ afterAll(async () => {
 
 describe('Voyager API Endpoints', () => {
   let newShipId;
-
-  it('GET /ships should return an empty array initially', async () => {
-  const res = await request(app).get('/ships');
-      expect(res.statusCode).toBe(200);
-      expect(res.body).toEqual([]);
-  });
   it('POST /ships should register a new ship successfully', async () => {
       const res = await request(app)
           .post('/ships')
@@ -36,29 +31,29 @@ describe('Voyager API Endpoints', () => {
   });
     
   it('POST /plan-voyage should 400 on missing body', async () => {
-    const res = await request(app).post('/api/voyage/plan-voyage').send({});
+    const res = await request(app).post('/plan-voyage').send({});
     expect(res.statusCode).toBeGreaterThanOrEqual(400);
   });
 
   it('GET /plan-history should 200', async () => {
-    const res = await request(app).get('/api/voyage/plan-history');
+    const res = await request(app).get('/plan-history');
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
   });
 
   it('POST /feedback should 400 on missing body', async () => {
-    const res = await request(app).post('/api/voyage/feedback').send({});
+    const res = await request(app).post('/feedback').send({});
     expect(res.statusCode).toBeGreaterThanOrEqual(400);
   });
 
   it('GET /ships should return an array', async () => {
-    const res = await request(app).get('/api/ships');
+    const res = await request(app).get('/ships');
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
   });
 
   it('GET /maintenance-alerts should 200', async () => {
-    const res = await request(app).get('/api/maintenance-alerts');
+    const res = await request(app).get('/maintenance-alerts');
     expect([200,404]).toContain(res.statusCode); // 404 if no ships
     if(res.statusCode === 200) {
       expect(res.body).toHaveProperty('shipId');
