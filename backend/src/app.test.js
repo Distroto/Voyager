@@ -3,23 +3,38 @@ const app = require('./app');
 const mongoose = require('mongoose');
 
 beforeAll(async () => {
-  await mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  });
+  await new Promise(resolve => setTimeout(resolve, 2000));
 });
 
 afterAll(async () => {
-  await mongoose.connection.close();
+    await mlQueue.close();
+    await mlQueueEvents.close();
+    await mongoose.connection.close();
 });
 
 describe('Voyager API Endpoints', () => {
-  it('GET / should return Voyager API is running', async () => {
-    const res = await request(app).get('/');
-    expect(res.statusCode).toBe(200);
-    expect(res.body.message).toMatch(/Voyager API is running/i);
-  });
+  let newShipId;
 
+  it('GET /ships should return an empty array initially', async () => {
+  const res = await request(app).get('/ships');
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual([]);
+  });
+  it('POST /ships should register a new ship successfully', async () => {
+      const res = await request(app)
+          .post('/ships')
+          .send({
+              name: "Test Ship",
+              imoNumber: "1234567",
+              engineType: "Test Engine",
+              capacity: 50000,
+              fuelConsumptionRate: 25
+          });
+      expect(res.statusCode).toBe(201);
+      expect(res.body).toHaveProperty('_id');
+      newShipId = res.body._id;
+  });
+    
   it('POST /plan-voyage should 400 on missing body', async () => {
     const res = await request(app).post('/api/voyage/plan-voyage').send({});
     expect(res.statusCode).toBeGreaterThanOrEqual(400);
@@ -34,20 +49,6 @@ describe('Voyager API Endpoints', () => {
   it('POST /feedback should 400 on missing body', async () => {
     const res = await request(app).post('/api/voyage/feedback').send({});
     expect(res.statusCode).toBeGreaterThanOrEqual(400);
-  });
-
-  it('POST /ships should register a new ship', async () => {
-    const res = await request(app).post('/api/ships').send({
-      name: 'Test Ship',
-      imoNumber: '1234567',
-      engineType: 'Test Engine',
-      capacity: 10000,
-      fuelConsumptionRate: 20
-    });
-    expect([201, 400]).toContain(res.statusCode); // 400 if duplicate
-    if (res.statusCode === 201) {
-      expect(res.body.name).toBe('Test Ship');
-    }
   });
 
   it('GET /ships should return an array', async () => {
