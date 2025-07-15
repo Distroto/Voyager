@@ -57,12 +57,23 @@ describe('Voyager API Endpoints', () => {
         expect(res.statusCode).toBe(404);
     });
 
-    it('GET /maintenance-alerts should return a prediction when a ship exists', async () => {
-        await request(app).post('/ships').send(testShipPayload);
+    it('GET /maintenance-alerts should queue a job when a ship exists', async () => {
+      await request(app).post('/ships').send({
+          name: "MV Jest Final",
+          imoNumber: "1112223",
+          engineType: "Test Engine",
+          capacity: 50000,
+          fuelConsumptionRate: 25
+      });
+      const initialJobCount = await mlQueue.getJobCountByTypes('waiting', 'active');
 
-        const res = await request(app).get('/maintenance-alerts');
-        
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty('maintenanceRequired');
-    }, 60000); 
+      const res = await request(app).get('/maintenance-alerts');
+      
+      expect(res.statusCode).toBe(202);
+      expect(res.body).toHaveProperty('message', 'Maintenance analysis has been initiated.');
+      expect(res.body).toHaveProperty('jobId');
+
+      const finalJobCount = await mlQueue.getJobCountByTypes('waiting', 'active');
+      expect(finalJobCount).toBe(initialJobCount + 1);
+  });
 });
