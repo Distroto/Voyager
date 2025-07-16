@@ -9,7 +9,7 @@ const swaggerDefinition = {
     description: 'An intelligent backend service that uses AI to optimize voyage planning, fuel usage, and maintenance scheduling for commercial vessels.',
   },
   servers: [
-    { url: 'http://13.53.122.82', description: 'Deployed server'},
+    { url: 'http://13.53.122.82:3000', description: 'Deployed server'},
     { url: 'http://localhost:3000', description: 'Local server' }
   ],
 };
