@@ -12,6 +12,19 @@ const swaggerDefinition = {
     { url: 'http://13.53.122.82:3000', description: 'Deployed server'},
     { url: 'http://localhost:3000', description: 'Local server' }
   ],
+  components: {
+    schemas: {
+      Error: {
+        type: 'object',
+        properties: {
+          error: {
+            type: 'string',
+            example: 'Bad request: missing fields',
+          },
+        },
+      },
+    },
+  },
 };
 
 const options = {
